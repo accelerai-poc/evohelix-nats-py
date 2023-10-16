@@ -52,3 +52,6 @@ class NATSClient(object):
     async def subscribe_js(self, subject: str, handler):
         logger.info("Subscribed to '{}'...".format(subject))
         return await self.js.subscribe(subject, cb=handler)
+
+    async def publish(self, subject: str, msg: str):
+        return await self.client.publish(subject, msg.encode())
