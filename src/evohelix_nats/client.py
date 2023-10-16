@@ -42,9 +42,9 @@ class NATSClient(object):
         logger.info("Start consuming from '{}'...".format(subject))
         return await self.client.subscribe(subject, cb=handler)
 
-    async def init_js(self, subject: str):
+    async def init_js(self, name: str, subject: str):
         self.js = self.client.jetstream()
-        return await self.js.add_stream(subjects=[subject])
+        return await self.js.add_stream(name=name, subjects=[subject])
 
     async def publish_js(self, subject: str, msg: str):
         return await self.js.publish(subject, msg.encode())
