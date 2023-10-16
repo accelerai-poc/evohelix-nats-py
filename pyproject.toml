@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evohelix_nats"
+version = "0.0.1"
+authors = [
+  { name="Pit Wegner", email="pit.wegner@gmail.com" },
+]
+description = "Evohelix wrapper for the NATS python client."
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dynamic = ["dependencies"]
+
+[project.urls]
+"Homepage" = "https://github.com/accelerai-poc/evohelix-nats-py"
+"Bug Tracker" = "https://github.com/accelerai-poc/evohelix-nats-py/issues"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
