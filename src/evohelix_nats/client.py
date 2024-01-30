@@ -52,6 +52,13 @@ class NATSClient(object):
                     name=settings.SERVICE_NAME,
                     subjects=[settings.SERVICE_NAME + ".*"])
 
+    async def broadcast(self, subject: str, msg: str, token: str):
+        target = subject.split(".")[0]
+        jwt = auth.exchange(token, target)
+        headers = {"X-Evo-Authorization": jwt["access_token"]}
+        return await self.client.publish(subject, msg.encode(),
+                                         headers=headers)
+
     async def request(self, subject: str, msg: str,
                       token: str, timeout: float = 0.5):
         target = subject.split(".")[0]
@@ -64,20 +71,14 @@ class NATSClient(object):
         target = subject.split(".")[0]
         jwt = auth.exchange(token, target)
         headers = {"X-Evo-Authorization": jwt["access_token"]}
-        return await self.js.publish(subject, msg.encode(), headers=headers)
+        return await self.js.publish(subject, msg.encode(),
+                                     headers=headers)
 
     async def subscribe(self, subject: str, handler):
         async def auth_middleware(msg):
             token = msg.headers.get("X-Evo-Authorization", "invalid")
             if auth.validate(token, subject):
-                return await handler()
+                await handler()
             else:
-                msg.nak()
+                await msg.nak()
         return await self.js.subscribe(subject, cb=auth_middleware)
-
-    async def broadcast(self, subject: str, msg: str, token: str):
-        target = subject.split(".")[0]
-        jwt = auth.exchange(token, target)
-        headers = {"X-Evo-Authorization": jwt["access_token"]}
-        return await self.client.publish(subject, msg.encode(),
-                                         headers=headers)
