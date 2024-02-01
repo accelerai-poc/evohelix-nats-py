@@ -46,11 +46,14 @@ class NATSClient(object):
                     name=settings.SERVICE_NAME,
                     subjects=[settings.SERVICE_NAME + ".*"])
             except APIError as error:
-                if error["err_code"] != 10058:
-                    raise
-                await self.js.update_stream(
-                    name=settings.SERVICE_NAME,
-                    subjects=[settings.SERVICE_NAME + ".*"])
+                raise
+                # # Not really a good idea when using wildcards.
+                # # Config should not change then!
+                # if error["err_code"] != 10058:
+                #     raise
+                # await self.js.update_stream(
+                #     name=settings.SERVICE_NAME,
+                #     subjects=[settings.SERVICE_NAME + ".*"])
 
     async def broadcast(self, subject: str, msg: str, token: str):
         target = subject.split(".")[0]
