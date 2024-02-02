@@ -1,7 +1,7 @@
 from nats.aio.client import Client as NATS
 from nats.js.errors import APIError
 import logging
-import auth
+from . import auth
 from python_settings import settings
 
 logger = logging.getLogger("uvicorn")
