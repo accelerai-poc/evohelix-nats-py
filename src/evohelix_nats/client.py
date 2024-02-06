@@ -81,7 +81,7 @@ class NATSClient(object):
         async def auth_middleware(msg):
             token = msg.headers.get("X-Evo-Authorization", "invalid")
             if auth.validate(token, msg.subject):
-                await handler(msg)
+                await handler(msg, token)
             else:
                 await msg.nak()
         return await self.js.subscribe(subject, cb=auth_middleware)
