@@ -41,5 +41,5 @@ def validate(token, subject):
     decoded = decode(token)
     if "error" in decoded.keys():
         return False
-    roles = decoded["realm_access"]["roles"]
-    return decoded if subject in roles else False
+    service_access = settings.SERVICE_NAME in decoded["aud"]
+    return decoded if service_access and subject in decoded["roles"] else False

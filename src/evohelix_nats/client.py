@@ -16,7 +16,7 @@ class NATSClient(object):
             cls._instance.client = NATS()
         return cls._instance
 
-    async def connect(self, enable_jetstream=True):
+    async def connect(self, enable_jetstream=False, js_subjects=[]):
         async def error_cb(e):
             logger.warn("Connection Error...", e)
 
@@ -44,16 +44,14 @@ class NATSClient(object):
             try:
                 await self.js.add_stream(
                     name=settings.SERVICE_NAME,
-                    subjects=[settings.SERVICE_NAME + ".*"])
+                    subjects=js_subjects)
             except APIError as error:
-                raise
-                # # Not really a good idea when using wildcards.
-                # # Config should not change then!
-                # if error["err_code"] != 10058:
-                #     raise
-                # await self.js.update_stream(
-                #     name=settings.SERVICE_NAME,
-                #     subjects=[settings.SERVICE_NAME + ".*"])
+                # Config should not change then!
+                if error.err_code != 10058:
+                    raise
+                await self.js.update_stream(
+                    name=settings.SERVICE_NAME,
+                    subjects=js_subjects)
 
     async def broadcast(self, subject: str, msg: str, token: str):
         target = subject.split(".")[0]
@@ -77,11 +75,13 @@ class NATSClient(object):
         return await self.js.publish(subject, msg.encode(),
                                      headers=headers)
 
-    async def subscribe(self, subject: str, handler):
+    async def subscribe(self, subject: str, handler, js=False):
         async def auth_middleware(msg):
             token = msg.headers.get("X-Evo-Authorization", "invalid")
             if auth.validate(token, msg.subject):
                 await handler(msg, token)
             else:
                 await msg.nak()
-        return await self.js.subscribe(subject, cb=auth_middleware)
+        if js:
+            return await self.js.subscribe(subject, cb=auth_middleware)
+        return await self.client.subscribe(subject, cb=auth_middleware)
