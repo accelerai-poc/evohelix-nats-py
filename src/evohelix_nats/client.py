@@ -68,19 +68,24 @@ class NATSClient(object):
         return await self.client.request(subject, msg.encode(), timeout,
                                          headers=headers)
 
-    async def publish(self, subject: str, msg: str, token: str):
+    async def publish(self, subject: str, msg: str, token: str, js=False):
         target = subject.split(".")[0]
         jwt = auth.exchange(token, target)
         headers = {"X-Evo-Authorization": jwt["access_token"]}
-        return await self.js.publish(subject, msg.encode(),
-                                     headers=headers)
+        if js:
+            return await self.js.publish(subject, msg.encode(),
+                                         headers=headers)
+        return await self.client.publish(subject, msg.encode(),
+                                         headers=headers)
+
+    async def reply(self, subject: str, msg: str):
+        return await self.client.publish(subject, msg.encode())
 
     async def subscribe(self, subject: str, handler, js=False):
         async def auth_middleware(msg):
             token = msg.headers.get("X-Evo-Authorization", "invalid")
-            decoded = auth.validate(token, msg.subject)
-            if decoded:
-                await handler(msg, decoded)
+            if auth.validate(token, msg.subject):
+                await handler(msg, token)
             else:
                 await msg.nak()
         if js:
