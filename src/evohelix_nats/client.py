@@ -38,6 +38,7 @@ class NATSClient(object):
             max_reconnect_attempts=5,
             user=settings.NATS_USERNAME,
             password=settings.NATS_PASSWORD,
+            inbox_prefix=f"_INBOX_{settings.SERVICE_NAME}".encode()
         )
         if enable_jetstream:
             self.js = self.client.jetstream()
