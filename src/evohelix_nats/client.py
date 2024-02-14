@@ -85,8 +85,9 @@ class NATSClient(object):
         return await self.client.publish(subject, msg.encode(),
                                          headers=headers)
 
-    async def reply(self, subject: str, msg: str):
-        return await self.client.publish(subject, msg.encode())
+    async def reply(self, subject: str, msg: str, status: int=200):
+        headers = {"X-Evo-Status": status}
+        return await self.client.publish(subject, msg.encode(), headers=headers)
 
     async def subscribe(self, subject: str, handler, js=False):
         async def auth_middleware(msg):
