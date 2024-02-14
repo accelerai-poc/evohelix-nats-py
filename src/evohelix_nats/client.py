@@ -86,7 +86,7 @@ class NATSClient(object):
                                          headers=headers)
 
     async def reply(self, subject: str, msg: str, status: int=200):
-        headers = {"X-Evo-Status": status}
+        headers = {"X-Evo-Status": str(status)}
         return await self.client.publish(subject, msg.encode(), headers=headers)
 
     async def subscribe(self, subject: str, handler, js=False):
