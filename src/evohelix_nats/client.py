@@ -95,7 +95,10 @@ class NATSClient(object):
             if token == "test" or auth.validate(token, msg.subject):
                 await handler(msg, token)
             else:
-                await msg.nak()
+                if js:
+                    await msg.nak()
+                else:
+                    await self.reply(msg.reply, '{"error": "unauthorized}', status=401)
         if js:
             return await self.js.subscribe(subject, cb=auth_middleware)
         return await self.client.subscribe(subject, cb=auth_middleware)
