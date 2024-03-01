@@ -78,6 +78,8 @@ class NATSClient(object):
         jwt = auth.exchange(token, target)
         if token == "test":
             jwt = {"access_token": "test"}
+        if "access_token" not in jwt.keys():
+            raise RuntimeError(f"Token exchange failed: {jwt}")
         headers = {"X-Evo-Authorization": jwt["access_token"]}
         if js:
             return await self.js.publish(subject, msg.encode(),
