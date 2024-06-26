@@ -1,4 +1,5 @@
 from nats.aio.client import Client as NATS
+from nats.js.api import RetentionPolicy
 from nats.js.errors import APIError
 import logging
 from . import auth
@@ -16,7 +17,7 @@ class NATSClient(object):
             cls._instance.client = NATS()
         return cls._instance
 
-    async def connect(self, enable_jetstream=False, js_subjects=[]):
+    async def connect(self, enable_jetstream=False, js_subjects=[], js_retention=RetentionPolicy.WORK_QUEUE):
         async def error_cb(e):
             logger.warn("Connection Error...", e)
 
@@ -45,6 +46,7 @@ class NATSClient(object):
             try:
                 await self.js.add_stream(
                     name=settings.SERVICE_NAME,
+                    retention=js_retention,
                     subjects=js_subjects)
             except APIError as error:
                 # Config should not change then!
