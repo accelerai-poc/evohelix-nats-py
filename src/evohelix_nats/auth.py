@@ -8,13 +8,15 @@ jwks_client = jwt.PyJWKClient(base_url + "/protocol/openid-connect/certs")
 
 
 def decode(token):
-    signing_key = jwks_client.get_signing_key_from_jwt(token)
     try:
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
         return jwt.decode(
             token, signing_key.key, algorithms=["RS256"],
             audience=settings.KEYCLOAK_CLIENT_ID,
             issuer=base_url)
     except jwt.exceptions.InvalidTokenError as e:
+        return {"error": str(e)}
+    except jwt.exceptions.DecodeError as e:
         return {"error": str(e)}
 
 
