@@ -21,7 +21,7 @@ def decode(token):
 
 
 def exchange(token, target_client):
-    token_response = requests.post(
+    return requests.post(
         base_url + "/protocol/openid-connect/token",
         auth=HTTPBasicAuth(
             username=settings.KEYCLOAK_CLIENT_ID,
@@ -35,8 +35,7 @@ def exchange(token, target_client):
             "subject_token": token,
             "audience": target_client
         }
-    )
-    return token_response.json()
+    ).json()
 
 
 def validate(token, subject):
@@ -45,3 +44,18 @@ def validate(token, subject):
         return False
     service_access = settings.SERVICE_NAME in decoded["aud"]
     return decoded if service_access and subject in decoded["roles"] else False
+
+
+def get_service_token(refresh_token=None):
+    data = {"grant_type": "client_credentials"}
+    if refresh_token:
+        data["grant_type"] = "refresh_token"
+        data["refresh_token"] = refresh_token
+    return requests.post(
+        settings.KEYCLOAK_URL + '/realms/' + settings.KEYCLOAK_REALM + '/protocol/openid-connect/token',
+        headers={'Content-Type': 'application/x-www-form-urlencoded'},
+        auth=HTTPBasicAuth(
+            username=settings.KEYCLOAK_CLIENT_ID,
+            password=settings.KEYCLOAK_CLIENT_SECRET),
+        data=data
+    ).json()
