@@ -26,13 +26,15 @@ class NATSClient(object):
                 token_response = auth.get_service_token(self.refresh_token)
                 if 'access_token' in token_response.keys():
                     self.access_token = token_response['access_token']
+                if 'refresh_token' in token_response.keys():
                     self.refresh_token = token_response['refresh_token']
             return self.access_token
         token_response = auth.get_service_token(self.refresh_token)
         if 'access_token' in token_response.keys():
             self.access_token = token_response['access_token']
+        if 'refresh_token' in token_response.keys():
             self.refresh_token = token_response['refresh_token']
-            return self.access_token
+        return self.access_token
 
     async def connect(self, enable_jetstream=False, js_subjects=[], js_retention=RetentionPolicy.WORK_QUEUE, use_token=False):
         async def error_cb(e):
