@@ -36,7 +36,7 @@ class NATSClient(object):
             self.refresh_token = token_response['refresh_token']
         return self.access_token
 
-    async def connect(self, enable_jetstream=False, js_subjects=[], js_retention=RetentionPolicy.WORK_QUEUE, use_token=False):
+    async def connect(self, js_subjects=[], js_retention=RetentionPolicy.WORK_QUEUE, use_token=False):
         async def error_cb(e):
             logger.warn("Connection Error...", e)
 
@@ -72,8 +72,8 @@ class NATSClient(object):
                 password=settings.NATS_PASSWORD,
                 inbox_prefix=f"_INBOX_{settings.SERVICE_NAME}".encode()
             )
-        if enable_jetstream:
-            self.js = self.client.jetstream()
+        self.js = self.client.jetstream()
+        if js_subjects:
             try:
                 await self.js.add_stream(
                     name=settings.SERVICE_NAME,
@@ -85,6 +85,7 @@ class NATSClient(object):
                     raise
                 await self.js.update_stream(
                     name=settings.SERVICE_NAME,
+                    retention=js_retention,
                     subjects=js_subjects)
 
     async def broadcast(self, subject: str, msg: str, token: str = None):
