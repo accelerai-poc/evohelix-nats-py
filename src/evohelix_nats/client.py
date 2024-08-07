@@ -130,7 +130,7 @@ class NATSClient(object):
             token = "invalid"
             if msg.headers and "X-Evo-Authorization" in msg.headers.keys():
                 token = msg.headers["X-Evo-Authorization"]
-            if auth.validate(token, msg.subject):
+            if auth.validate(token):
                 await handler(msg, token)
             else:
                 if js:

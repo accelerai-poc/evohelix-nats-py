@@ -38,12 +38,11 @@ def exchange(token, target_client):
     ).json()
 
 
-def validate(token, subject):
+def validate(token):
     decoded = decode(token)
     if "error" in decoded.keys():
         return False
-    service_access = settings.SERVICE_NAME in decoded["aud"]
-    return decoded if service_access and subject in decoded["roles"] else False
+    return decoded if settings.SERVICE_NAME in decoded["aud"] else False
 
 
 def get_service_token(refresh_token=None):
