@@ -81,7 +81,7 @@ class NATSClient(object):
             token = self.get_auth_token()
         jwt = auth.exchange(token, target)
         client = NATS()
-        client.connect(
+        await client.connect(
             settings.NATS_ENDPOINT,
             max_reconnect_attempts=5,
             token=jwt["access_token"],
@@ -89,7 +89,7 @@ class NATSClient(object):
         )
         headers = {"X-Evo-Authorization": jwt["access_token"]}
         response = await client.publish(subject, msg.encode(), headers=headers)
-        client.close()
+        await client.close()
         return response
 
     async def request(self, subject: str, msg: str,
@@ -99,7 +99,7 @@ class NATSClient(object):
             token = self.get_auth_token()
         jwt = auth.exchange(token, target)
         client = NATS()
-        client.connect(
+        await client.connect(
             settings.NATS_ENDPOINT,
             max_reconnect_attempts=5,
             token=jwt["access_token"],
@@ -108,7 +108,7 @@ class NATSClient(object):
         headers = {"X-Evo-Authorization": jwt["access_token"]}
         response = await client.request(subject, msg.encode(), timeout,
                                         headers=headers)
-        client.close()
+        await client.close()
         return response
 
     async def publish(self, subject: str, msg: str, token: str = None, js: bool = False):
@@ -117,21 +117,21 @@ class NATSClient(object):
             token = self.get_auth_token()
         jwt = auth.exchange(token, target)
         client = NATS()
-        client.connect(
+        await client.connect(
             settings.NATS_ENDPOINT,
             max_reconnect_attempts=5,
             token=jwt["access_token"],
             inbox_prefix=f"_INBOX_{settings.SERVICE_NAME}".encode()
         )
         if "access_token" not in jwt.keys():
-            client.close()
+            await client.close()
             raise RuntimeError(f"Token exchange failed: {jwt}")
         headers = {"X-Evo-Authorization": jwt["access_token"]}
         if js:
             cjs = client.jetstream()
             response = await cjs.publish(subject, msg.encode(), headers=headers)
         response = await client.publish(subject, msg.encode(), headers=headers)
-        client.close()
+        await client.close()
         return response
 
     async def reply(self, subject: str, msg: str, status: int = 200):
