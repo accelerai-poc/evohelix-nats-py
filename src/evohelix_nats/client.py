@@ -36,7 +36,7 @@ class NATSClient(object):
             self.refresh_token = token_response['refresh_token']
         return self.access_token
 
-    async def connect(self, js_subjects=[], js_retention=RetentionPolicy.WORK_QUEUE, use_token=False):
+    async def connect(self, js_subjects=[], js_retention=RetentionPolicy.WORK_QUEUE):
         async def error_cb(e):
             logger.warn("Connection Error...", e)
 
@@ -49,29 +49,16 @@ class NATSClient(object):
         async def reconnected_cb():
             logger.info("Got reconnected...")
 
-        if use_token:
-            await self.client.connect(
-                settings.NATS_ENDPOINT,
-                reconnected_cb=reconnected_cb,
-                disconnected_cb=disconnected_cb,
-                error_cb=error_cb,
-                closed_cb=closed_cb,
-                max_reconnect_attempts=5,
-                token=self.get_auth_token(),
-                inbox_prefix=f"_INBOX_{settings.SERVICE_NAME}".encode()
-            )
-        else:
-            await self.client.connect(
-                settings.NATS_ENDPOINT,
-                reconnected_cb=reconnected_cb,
-                disconnected_cb=disconnected_cb,
-                error_cb=error_cb,
-                closed_cb=closed_cb,
-                max_reconnect_attempts=5,
-                user=settings.NATS_USERNAME,
-                password=settings.NATS_PASSWORD,
-                inbox_prefix=f"_INBOX_{settings.SERVICE_NAME}".encode()
-            )
+        await self.client.connect(
+            settings.NATS_ENDPOINT,
+            reconnected_cb=reconnected_cb,
+            disconnected_cb=disconnected_cb,
+            error_cb=error_cb,
+            closed_cb=closed_cb,
+            max_reconnect_attempts=5,
+            token=self.get_auth_token(),
+            inbox_prefix=f"_INBOX_{settings.SERVICE_NAME}".encode()
+        )
         self.js = self.client.jetstream()
         if js_subjects:
             try:
@@ -93,9 +80,17 @@ class NATSClient(object):
         if not token:
             token = self.get_auth_token()
         jwt = auth.exchange(token, target)
+        client = NATS()
+        client.connect(
+            settings.NATS_ENDPOINT,
+            max_reconnect_attempts=5,
+            token=jwt["access_token"],
+            inbox_prefix=f"_INBOX_{settings.SERVICE_NAME}".encode()
+        )
         headers = {"X-Evo-Authorization": jwt["access_token"]}
-        return await self.client.publish(subject, msg.encode(),
-                                         headers=headers)
+        response = await client.publish(subject, msg.encode(), headers=headers)
+        client.close()
+        return response
 
     async def request(self, subject: str, msg: str,
                       token: str = None, timeout: float = 0.5):
@@ -103,25 +98,43 @@ class NATSClient(object):
         if not token:
             token = self.get_auth_token()
         jwt = auth.exchange(token, target)
+        client = NATS()
+        client.connect(
+            settings.NATS_ENDPOINT,
+            max_reconnect_attempts=5,
+            token=jwt["access_token"],
+            inbox_prefix=f"_INBOX_{settings.SERVICE_NAME}".encode()
+        )
         headers = {"X-Evo-Authorization": jwt["access_token"]}
-        return await self.client.request(subject, msg.encode(), timeout,
-                                         headers=headers)
+        response = await client.request(subject, msg.encode(), timeout,
+                                        headers=headers)
+        client.close()
+        return response
 
-    async def publish(self, subject: str, msg: str, token: str = None, js=False):
+    async def publish(self, subject: str, msg: str, token: str = None, js: bool = False):
         target = subject.split(".")[0]
         if not token:
             token = self.get_auth_token()
         jwt = auth.exchange(token, target)
+        client = NATS()
+        client.connect(
+            settings.NATS_ENDPOINT,
+            max_reconnect_attempts=5,
+            token=jwt["access_token"],
+            inbox_prefix=f"_INBOX_{settings.SERVICE_NAME}".encode()
+        )
         if "access_token" not in jwt.keys():
+            client.close()
             raise RuntimeError(f"Token exchange failed: {jwt}")
         headers = {"X-Evo-Authorization": jwt["access_token"]}
         if js:
-            return await self.js.publish(subject, msg.encode(),
-                                         headers=headers)
-        return await self.client.publish(subject, msg.encode(),
-                                         headers=headers)
+            cjs = client.jetstream()
+            response = await cjs.publish(subject, msg.encode(), headers=headers)
+        response = await client.publish(subject, msg.encode(), headers=headers)
+        client.close()
+        return response
 
-    async def reply(self, subject: str, msg: str, status: int=200):
+    async def reply(self, subject: str, msg: str, status: int = 200):
         headers = {"X-Evo-Status": str(status)}
         return await self.client.publish(subject, msg.encode(), headers=headers)
 
