@@ -1,0 +1,24 @@
+name: Build And Test
+run-name: ${{ gitea.actor }} is running ${{ gitea.repository }} build
+on: [ push ]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: gitea.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "lts/*"
+      - name: Install dependencies
+        run: npm install -g semantic-release@24 @saithodev/semantic-release-gitea @semantic-release/exec
+      - name: Release
+        id: release
+        env:
+          GITEA_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: semantic-release || exit 1
